@@ -102,6 +102,27 @@ def inspect(path: Path) -> CsvInfo:
             raise schema.ValidationError(f"Memory out of range: {rid}")
         if channel in memories:
             raise schema.ValidationError(f"duplicate Memory record: M{channel:03d}")
+        rid = f"M{channel:03d}"
+        name = row["name"]
+        model.encode_ascii(name, schema.NAME_LENGTH)
+        l1 = _truthy(row["list1"])
+        l2 = _truthy(row["list2"])
+        l3 = _truthy(row["list3"])
+        bank_text = row["bank"].strip() or "0"
+        try:
+            bank = int(bank_text, 10)
+        except ValueError as exc:
+            raise schema.ValidationError(f"{rid}: invalid Bank {bank_text!r}") from exc
+        if not 0 <= bank <= schema.BANK_COUNT:
+            raise schema.ValidationError(f"{rid}: Bank must be 0..8")
+        freq_text = row["frequency"].strip()
+        if not freq_text:
+            if name or l1 or l2 or l3 or bank:
+                raise schema.ValidationError(f"{rid}: frequency is required when other fields are set")
+        else:
+            _parse_frequency(freq_text)
+            _parse_modulation(row["modulation"])
+            _parse_bandwidth(row["bandwidth"])
         memories.add(channel)
     if len(memories) != schema.CHANNEL_COUNT:
         raise schema.ValidationError(f"CSV must contain all 400 physical Memory slots; found {len(memories)}")

@@ -157,6 +157,13 @@ def cmd_radio_write(args: argparse.Namespace) -> int:
         print("No changes")
         return 0
     print(f"planned_changed_blocks={len(blocks)}", file=sys.stderr)
+    if not args.yes:
+        if not sys.stdin.isatty():
+            raise schema.ValidationError("radio write requires --yes when stdin is not interactive")
+        answer = input("Type WRITE to continue with EEPROM write: ").strip()
+        if answer != "WRITE":
+            print("Cancelled", file=sys.stderr)
+            return 1
     with radio.K5Radio(args.port) as dev:
         print(f"Connected: {dev.version}", file=sys.stderr)
         chunks = dev.write_image(updated, base_image=base, progress=_progress)
@@ -215,6 +222,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("raw", type=Path, help="new RAW image")
     p.add_argument("--base", required=True, type=Path, help="fresh RAW baseline; radio must still match it exactly")
     p.add_argument("--port", required=True)
+    p.add_argument("--yes", action="store_true", help="skip interactive WRITE confirmation")
     p.set_defaults(func=cmd_radio_write)
     return parser
 

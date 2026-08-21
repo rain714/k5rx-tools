@@ -18,7 +18,8 @@ The EEPROM writer follows these invariants:
 - Schema mismatch blocks write operations.
 - Factory/calibration `0x1E00..0x1FFF` is never writable.
 - Normal memory-tool writes are allowlisted to Memory records/names and Bank names.
-- Radio writes are followed by read-back verification.
+- Immediately before write, the full radio EEPROM must still match the supplied editing baseline.
+- Radio writes require an explicit `WRITE` confirmation (or `--yes` for automation) and are followed by read-back verification.
 - CSV import never silently compacts or renumbers physical slots M001..M400.
 - Hidden per-memory record fields are preserved when CSV updates an already-populated slot.
 
