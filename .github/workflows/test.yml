@@ -1,0 +1,36 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v9
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+      - run: uv sync --extra dev
+      - run: uv run pytest
+      - run: uv build
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Extract inline JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          html = Path('web/index.html').read_text(encoding='utf-8')
+          script = html.split('<script>', 1)[1].split('</script>', 1)[0]
+          Path('/tmp/k5rx-web.js').write_text(script, encoding='utf-8')
+          PY
+      - name: Check JavaScript syntax
+        run: node --check /tmp/k5rx-web.js
