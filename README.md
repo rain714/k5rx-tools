@@ -1,64 +1,161 @@
 # K5RX-JPN Tools
 
-K5RX-JPN Tools is a companion toolset for the Japanese-oriented RX-only firmware based on F4HWN for the Quansheng UV-K5/K6 V1 family.
+[English README](README.en.md)
 
-The project provides the same RX_ONLY EEPROM model through two interfaces:
+K5RX-JPN Tools は、Quansheng UV-K5/K6 V1 系の **日本向け受信専用（RX-only）Firmware** を管理するためのツール群です。現在は F4HWN ベースの RX_ONLY EEPROM Schema v2 を対象としています。
 
-- **CLI (`k5rx`)** — local Python tools for radio EEPROM read/write, RAW/CSV conversion, inspection and validation.
-- **Web Memory Manager** — browser-based 400-memory editor using Web Serial, intended to be deployable as a static GitHub Pages site.
+同じEEPROM仕様を、用途に応じて2つの形で提供します。
 
-The current implementation targets **RX_ONLY EEPROM Schema v2** only.
+- **CLI (`k5rx`)** — Python / pyserial ベース。RadioのRead/Write、RAW/CSV変換、検証、差分確認を行います。
+- **Web Memory Manager** — Web Serialを使用する400 Memory対応ブラウザツール。GitHub Pagesでの公開を想定しています。
 
-## Safety model
+## 最初に理解しておくこと
 
-The tool treats the full 8192-byte `.raw` EEPROM image as the lossless backup format. CSV is a human-editable interchange format and intentionally exposes only the fields managed by the normal Memory Manager UI.
+このツールでは、8192-byteの `.raw` EEPROM imageを**完全なバックアップ形式**として扱います。
 
-The EEPROM writer follows these invariants:
+CSVはExcel等で編集しやすい形式ですが、CTCSS/DCS、Step、Companderなど通常画面に出さないfieldを意図的に含みません。そのため、CSVからRAWを作る際は、hidden fieldを保持するための元RAW（`--base`）が必要です。
 
-- Schema mismatch blocks write operations.
-- Factory/calibration `0x1E00..0x1FFF` is never writable.
-- Normal memory-tool writes are allowlisted to Memory records/names and Bank names.
-- Immediately before write, the full radio EEPROM must still match the supplied editing baseline.
-- Radio writes require an explicit `WRITE` confirmation (or `--yes` for automation) and are followed by read-back verification.
-- CSV import never silently compacts or renumbers physical slots M001..M400.
-- Hidden per-memory record fields are preserved when CSV updates an already-populated slot.
+安全性のため、Radio Writeでは次を必須としています。
 
-## Quick start
+- EEPROM Schema不一致ならWriteしない。
+- Factory/Calibration領域 `0x1E00..0x1FFF` は絶対にWriteしない。
+- Memory record/name と Bank name以外の意図しない変更を拒否する。
+- Write直前にRadio全体を再Readし、`--base` と完全一致することを確認する。
+- 通常のCLI Writeでは `WRITE` と明示入力する。
+- 各Write transaction後に同じ範囲をReadし、byte単位でVerifyする。
 
-Development:
+## インストール / 実行
+
+開発中のrepositoryから実行する場合:
 
 ```bash
 uv sync
 uv run k5rx --help
 ```
 
-Once published as a Python package:
+PyPI公開後は、インストールせず一時実行できます。
 
 ```bash
 uvx k5rx-jpn --help
 ```
 
-Examples:
+CLI自身のhelp/error messageは、terminal文字コードによる問題を避けるため**英語**を基本とします。
+
+具体的な操作手順と典型errorからの復旧方法は [`docs/cli.md`](docs/cli.md) にまとめています。Document一覧は [`docs/README.md`](docs/README.md) を参照してください。
+
+## CSVを新規作成する
+
+CSVはM001〜M400の全400 Memory rowが必須です。手作業で400行を作る必要はなく、templateを生成できます。
 
 ```bash
-# Validate and inspect a RAW backup
-uv run k5rx eeprom validate backup.raw
-uv run k5rx eeprom inspect backup.raw
-
-# RAW -> CSV
-uv run k5rx csv export backup.raw channels.csv
-
-# CSV -> RAW while preserving hidden fields from the base image
-uv run k5rx csv import channels.csv --base backup.raw --output updated.raw
-
-# Read the complete EEPROM from a normally booted radio
-uv run k5rx radio read backup.raw --port /dev/cu.usbserial-10
-
-# Write only allowed changed regions and verify them
-uv run k5rx radio write updated.raw --base backup.raw --port /dev/cu.usbserial-10
+uv run k5rx csv template channels.csv
 ```
 
-## CSV format
+デフォルトでは次の順で生成します。
+
+```text
+header
+B1 ... B8
+M001 ... M400
+```
+
+Bank rowの初期名称は `BANK1`〜`BANK8` です。Bank nameをCSVで管理しない場合:
+
+```bash
+uv run k5rx csv template channels.csv --no-banks
+```
+
+編集後は、Radioへ反映する前にCSV単体で検証できます。
+
+```bash
+uv run k5rx csv validate channels.csv
+```
+
+## 推奨ワークフロー: Radio → CSV編集 → Radio
+
+### 1. Radioから新しいRAW backupを取得
+
+RadioはFirmware書込みモードではなく、通常起動してください。
+
+まずportを確認できます。
+
+```bash
+uv run k5rx radio ports
+```
+
+次にEEPROM全体をReadします。
+
+```bash
+uv run k5rx radio read backup.raw --port /dev/cu.usbserial-10
+```
+
+この `backup.raw` が、この編集作業の**baseline**になります。CSV importとRadio writeの両方で使用するため、そのまま保持してください。
+
+### 2. RAWをCSVへExport
+
+```bash
+uv run k5rx csv export backup.raw channels.csv
+```
+
+CSVをExcelやテキストエディタで編集します。
+
+```bash
+uv run k5rx csv validate channels.csv
+```
+
+### 3. CSVをRAWへ反映
+
+```bash
+uv run k5rx csv import channels.csv \
+  --base backup.raw \
+  --output updated.raw
+```
+
+`--base backup.raw` は、CSVに存在しないhidden fieldを保持するために必要です。
+
+### 4. 差分確認
+
+```bash
+uv run k5rx eeprom diff backup.raw updated.raw
+```
+
+想定したMemory/Bankのみが変更されていることを確認します。
+
+### 5. RadioへWrite + Verify
+
+```bash
+uv run k5rx radio write updated.raw \
+  --base backup.raw \
+  --port /dev/cu.usbserial-10
+```
+
+Write直前にRadioを再Readします。Radioが `backup.raw` 取得後に別のツール等で変更されていた場合は、上書きせず停止します。その場合は、再度
+
+```bash
+uv run k5rx radio read backup-new.raw --port /dev/cu.usbserial-10
+```
+
+で新しいbaselineを取得し、そのRAWを使ってCSV変更を再適用してください。
+
+`--yes` は対話確認を省略するautomation向けoptionです。通常操作では使用しないことを推奨します。
+
+## RAWのみを扱う
+
+```bash
+# Schema / Memory validation
+uv run k5rx eeprom validate backup.raw
+
+# 概要表示
+uv run k5rx eeprom inspect backup.raw
+
+# 使用中Memoryも表示
+uv run k5rx eeprom inspect backup.raw --memories
+
+# RAW同士の差分
+uv run k5rx eeprom diff before.raw after.raw
+```
+
+## CSV仕様
 
 Canonical header:
 
@@ -66,7 +163,7 @@ Canonical header:
 record,name,frequency,modulation,bandwidth,list1,list2,list3,bank
 ```
 
-Memory rows use `M001`..`M400`. Optional Bank-name rows use `B1`..`B8` and appear before Memory rows:
+Memoryは `M001`〜`M400`、Bank name definitionは `B1`〜`B8` を使用します。
 
 ```csv
 record,name,frequency,modulation,bandwidth,list1,list2,list3,bank
@@ -75,39 +172,75 @@ B2,LOCAL,,,,,,,
 M001,HANEDA,118.10000,AM,Wide,1,0,0,1
 ```
 
-For backward compatibility, import also accepts `channel` as the first-column header.
+Import時のみ、旧形式との互換性のため先頭列名 `channel` も受け付けます。新規Exportは常に `record` です。
 
-See [`docs/csv-format.md`](docs/csv-format.md).
+詳細: [`docs/csv-format.md`](docs/csv-format.md)
 
-## Web app
+## Web Memory Manager
 
-The Web Memory Manager is under `web/`. It runs entirely in the browser. EEPROM/CSV data is not uploaded to a backend.
+`web/index.html` はbackend不要のstatic Web applicationです。
 
-Web Serial requires a compatible browser and secure context. Chrome/Edge over HTTPS or localhost are the primary supported environments.
+- RadioとはWeb Serialで直接通信します。
+- RAW/CSV内容をserverへuploadしません。
+- Chrome / Edge + HTTPS または localhost を主対象とします。
+- CLIと同じく、Factory/Calibration write guard、baseline再確認、read-back verifyを行います。
 
-## Project layout
+ローカル実行:
 
-```text
-src/k5rx_jpn/     Python library and CLI
-web/              browser Memory Manager
-docs/             format/protocol/architecture specifications
-tests/            Python regression tests
-testdata/         portable test vectors and examples
-.github/workflows CI and GitHub Pages deployment
+```bash
+python3 -m http.server 8000 --directory web
 ```
 
-## Protocol provenance and licensing
+その後 `http://localhost:8000/` を開きます。
 
-K5RX-JPN Tools is licensed under **Apache License 2.0**.
+GitHub Actionsから `web/` をそのままGitHub Pagesへdeployできる構成です。
 
-The normal-mode serial protocol implementation is based on the Apache-2.0 licensed F4HWN/DualTachyon firmware source and documented device behavior. GPL implementations such as k5prog and CHIRP may be used for interoperability comparison but are not implementation sources for this repository.
+Web UIはJPN向けのため、**初期版は日本語をprimary language**とします。将来UIをTypeScript等へ分割する際に文字列resourceを分離し、英語等へ切り替えられるi18n構成へ移行する方針です。
 
-See [`docs/serial-protocol-provenance.md`](docs/serial-protocol-provenance.md).
+詳細: [`docs/web-memory-manager.md`](docs/web-memory-manager.md)
 
-## Firmware flashing
+## 開発 / Test
 
-Firmware flashing is intentionally **not part of the initial stable CLI surface**. EEPROM editing and firmware flashing have different failure modes and safety requirements. The architecture reserves a separate `firmware` module for a future implementation after permissively licensed reference behavior and recovery handling are fully documented.
+```bash
+# 軽量なsyntax/smoke check
+make all
+
+# Python regression tests
+uv run --extra dev pytest
+
+# Python package build
+uv build
+```
+
+GitHub ActionsではPython 3.11 / 3.12 / 3.13のtest、Web JavaScript syntax check、GitHub Pages deployを行う構成です。
+
+## Repository構成
+
+```text
+src/k5rx_jpn/      Python library / CLI
+web/               Web Memory Manager
+docs/              EEPROM / CSV / protocol / design document
+tests/             regression tests
+testdata/          portable test vectors / examples
+.github/workflows/ CI / GitHub Pages
+```
+
+初期設計上の判断は [`docs/decisions.md`](docs/decisions.md) に記録しています。
+
+## Serial protocolの由来 / License
+
+K5RX-JPN Toolsは **Apache License 2.0** で公開します。
+
+通常起動時のSerial protocol実装は、Apache-2.0で公開されているF4HWN/DualTachyon Firmware sourceと実機仕様を一次資料とした独立実装です。GPLのk5prog/CHIRPはinteroperability確認には利用できますが、このrepositoryの実装sourceとしてコードをコピー・翻案しない方針です。
+
+詳細: [`docs/serial-protocol-provenance.md`](docs/serial-protocol-provenance.md)
+
+## Firmware書込み
+
+Firmware flashingは初期版には含めません。
+
+EEPROM編集とは失敗時のrecover手順・boot mode・安全性が異なるため、将来別module/workflowとして実装します。permissive licenseの参照実装、失敗時挙動、実機testを整理してから追加する方針です。
 
 ## License
 
-Apache-2.0. See [`LICENSE`](LICENSE).
+Apache-2.0. [`LICENSE`](LICENSE) を参照してください。

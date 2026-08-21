@@ -14,7 +14,9 @@
 0x000E uint8  bank_count  8
 ```
 
-## Layout
+Toolsはこのheaderを検証し、期待値と一致しないRAWへの通常Writeを拒否します。
+
+## EEPROM Layout
 
 ```text
 0x0000..0x000F  header
@@ -30,12 +32,14 @@
 0x1E00..0x1FFF  factory/calibration
 ```
 
-Factory/calibration is never writable by K5RX-JPN memory tools.
+K5RX-JPN Memory toolsは`0x1E00..0x1FFF`を絶対にWriteしません。
+
+通常のMemory編集でWriteを許可する領域は、Memory record/nameとBank tableだけです。
 
 ## Memory record
 
 ```text
-byte 0..2       frequency low 24 bits (10 Hz units)
+byte 0..2       frequency low 24 bits (10 Hz unit)
 byte 3 bit0..2  frequency high 3 bits
        bit3..4  RX code type
        bit5     bandwidth (0 Wide, 1 Narrow)
@@ -44,23 +48,39 @@ byte 4          RX code (low 7 bits)
 byte 5 bit0..2  modulation (0 FM, 1 AM, 2 USB)
        bit3..7  step index
 byte 6 bit0..2  Scan List 1..3 mask
-       bit3..6  Bank ID (0 unbanked, 1..8 Bank)
+       bit3..6  Bank ID (0 UNBANKED, 1..8 Bank)
 byte 7          reserved
 ```
 
-An erased record is eight `0xFF` bytes. The normal UI/CSV does not expose RX code, code type, step, compander or reserved bits; those bytes/bits are preserved when updating an existing slot.
+8 byteすべてが`0xFF`のrecordをerased Memoryとして扱います。
+
+通常のWeb table/CSVが公開するのは次のfieldです。
+
+- Name
+- Frequency
+- Modulation
+- Bandwidth
+- List 1..3
+- Bank
+
+RX code/type、Step、Compander、reserved等はCSVに含めず、既存slotのvisible fieldを更新する際は元recordから保持します。
 
 ## Frequency validation
 
-Wide-RX firmware accepts:
+Wide-RX Firmwareで許可する範囲:
 
 ```text
 18 MHz <= f < 630 MHz
 840 MHz <= f <= 1300 MHz
 ```
 
-The gap from 630 MHz through below 840 MHz is rejected.
+630 MHz以上840 MHz未満は拒否します。
 
 ## Bank record
 
-There are eight 16-byte Bank records at `0x1D30`. The first ten bytes store the printable-ASCII Bank name. Memory Manager updates only these ten name bytes and preserves the remaining six bytes.
+`0x1D30`から16 byte x 8件です。
+
+- 先頭10 byte: printable ASCII Bank name
+- 残り6 byte: Memory Managerからは変更せず保持
+
+Bank IDは0〜8を使用し、0はUNBANKEDです。

@@ -1,71 +1,120 @@
-# Architecture
+# K5RX-JPN Tools アーキテクチャ
 
-## Scope
+## 目的
 
-K5RX-JPN Tools is a monorepo containing two front ends over one documented RX_ONLY data model:
-
-- Python CLI/library for local automation and file/radio workflows.
-- Browser Memory Manager for interactive editing with Web Serial.
-
-The firmware fork remains a separate repository. This repository is a companion toolset and may later support compatible schemas from other firmware projects.
-
-## Stable contracts
-
-The repository treats three specifications as the shared contracts between Python and Web implementations:
-
-1. EEPROM Schema v2.
-2. CSV format.
-3. Normal-mode serial framing and EEPROM commands.
-
-Python and Web do not share implementation source code. They are checked against the same specification and portable test vectors instead.
-
-## Data flow
+K5RX-JPN Toolsは、RX_ONLY EEPROM Schemaを共通仕様として、CLIとWebの2つの提供形態を同一repositoryで管理します。
 
 ```text
-Radio <-> Serial transport <-> RAW EEPROM image <-> Schema codec <-> Memory model <-> CSV/UI
+                RX_ONLY Schema v2
+                       │
+          ┌────────────┴────────────┐
+          │                         │
+     Python CLI                 Web App
+          │                         │
+   pyserial / files           Web Serial / files
+          │                         │
+          └──────── RAW / CSV ──────┘
 ```
 
-The 8192-byte RAW EEPROM image is the lossless representation. CSV is intentionally lossy and human-editable.
+Firmware本体はF4HWN forkの別repositoryとし、Tools repositoryはFirmware source treeから独立してreleaseできる構成にします。
 
-## Python package
+## 正本となるデータ形式
+
+### RAW
+
+8192-byte EEPROM imageをlossless source of truthとします。
+
+RAWにはMemory以外の設定やhidden field、Factory/Calibration領域も含まれるため、backup/recovery用途ではCSVではなくRAWを使用します。
+
+### CSV
+
+CSVは人間が編集するための交換形式です。
+
+- M001〜M400を必須とする
+- B1〜B8 Bank name rowはoptional
+- hidden fieldは含めない
+- Import時はbase RAWからhidden fieldを保持する
+
+## Python module
 
 ```text
 src/k5rx_jpn/
-  schema.py       constants and schema validation
-  model.py        Memory/Bank model and RAW codec
-  csvio.py        canonical CSV import/export
-  protocol.py     serial frame codec and command builders
-  radio.py        pyserial transport, EEPROM read/write/verify
-  cli.py          argparse command surface
+├── schema.py      EEPROM layout / validation / write allowlist
+├── model.py       Memory / Bank codec
+├── csvio.py       CSV template / import / export / validation
+├── protocol.py    normal-mode serial framing / command codec
+├── radio.py       pyserial transport / read / write / verify
+└── cli.py         argparse CLI
 ```
 
-The initial CLI surface is:
+Runtime dependencyはpyserialのみとし、CLI frameworkは導入しません。
 
-```text
-k5rx
-  eeprom validate RAW
-  eeprom inspect RAW
-  eeprom diff OLD NEW
-  csv export RAW CSV [--no-banks]
-  csv import CSV --base RAW --output RAW [--no-banks]
-  csv validate CSV
-  radio info --port PORT
-  radio read OUTPUT --port PORT
-  radio write NEW --base OLD --port PORT
+## Web
+
+初期版は`web/index.html`のsingle static applicationです。
+
+理由:
+
+- backend不要
+- npm build不要
+- GitHub Pagesへそのままdeploy可能
+- 現在の機能規模では1ファイルでもreview可能
+
+将来、詳細editorや複数画面などで複雑化した段階でTypeScript/Vite等へ分割します。その際にUI stringもresource化してi18n対応します。
+
+## Shared contract
+
+PythonとWebでsource code自体を共有することは目的にしません。代わりに次を共通contractとします。
+
+- EEPROM Schema document
+- CSV format document
+- Serial protocol document
+- safety invariant
+- test vector / regression test
+
+PythonとJavaScriptで同じRAW/CSVを扱ったときに同じ意味になることを重要視します。
+
+## Write safety
+
+CLI/Web双方で次を守ります。
+
+1. Schema mismatchを拒否
+2. dirty blockを8-byte単位で抽出
+3. Memory/nameとBank以外のdirty blockを拒否
+4. Factory/Calibration `0x1E00..0x1FFF`を絶対にWriteしない
+5. Write直前にRadio全体を再Readし、editing baselineと一致することを確認
+6. contiguous blockを最大128-byte transactionへまとめる
+7. transactionごとにread-back verify
+
+速度よりこのinvariantを優先します。
+
+## Distribution
+
+### CLI
+
+Python package name: `k5rx-jpn`
+
+```bash
+uvx k5rx-jpn --help
 ```
 
-`radio write` requires a base RAW image. Only bytes that differ between base and new image are candidates for write, and every changed 8-byte block must be inside the explicit Memory/Bank allowlist. Adjacent blocks are coalesced up to 128 bytes and read back after every transaction.
+Primary commandは`k5rx`です。
 
-## Web application
+### Web
 
-The current beta Memory Manager is initially published as a static app under `web/`. It retains the proven single-page behavior while the Python contracts and test vectors are established. A later refactor may split it into TypeScript modules without changing the user-facing data formats.
+`web/`をGitHub Pagesへdeployします。
 
-GitHub Pages is the intended deployment target because the app requires no server-side state and Web Serial requires HTTPS/localhost.
+### CI
+
+- Python 3.11 / 3.12 / 3.13 pytest
+- package build
+- Web JavaScript syntax check
+- GitHub Pages deployment
 
 ## Firmware flashing
 
-Firmware flashing is deliberately separated from EEPROM management. It is not part of the initial stable CLI/API. A future `firmware` module may be added after protocol provenance, recovery behavior, and write guards are documented and tested independently.
+EEPROM managementとはfailure/recovery modelが異なるため、初期stable surfaceには含めません。将来`firmware` moduleとして独立したsafety testとprovenanceを持たせます。
 
 ## Versioning
 
-The repository uses one tool version for Python and Web. EEPROM schema versions remain independent of tool versions.
+Python CLIとWebは同じTools versionを使用します。EEPROM Schema versionはTools versionとは独立して管理します。

@@ -1,4 +1,22 @@
-# K5RX-JPN CSV Format
+# K5RX-JPN CSV仕様
+
+CSVは、Memory Managerで扱う項目をExcelやテキストエディタで編集するための**人間向け交換形式**です。完全なEEPROM backupではありません。
+
+## Template生成
+
+Memory rowはM001〜M400の全400件が必須です。新規作成時はtemplate commandを使用できます。
+
+```bash
+k5rx csv template channels.csv
+```
+
+デフォルトではB1〜B8 Bank rowも含みます。BankをCSVで管理しない場合:
+
+```bash
+k5rx csv template channels.csv --no-banks
+```
+
+## Header
 
 Canonical header:
 
@@ -6,13 +24,13 @@ Canonical header:
 record,name,frequency,modulation,bandwidth,list1,list2,list3,bank
 ```
 
-New exports always use `record`. Imports also accept legacy `channel` as the first-column header.
+新規Exportは常に `record` を使用します。Importのみ旧形式互換として先頭列 `channel` も受け付けます。
 
-## Memory rows
+## Memory row
 
-Memory rows use `M001` through `M400`. All 400 physical slots are required exactly once so spreadsheet editing cannot silently compact or renumber EEPROM slots.
+Memory rowの`record`は `M001`〜`M400` です。
 
-Example:
+全400 physical slotを**それぞれ1回ずつ**含める必要があります。これによりspreadsheet編集時の意図しない詰め替え・renumberを防ぎます。
 
 ```csv
 record,name,frequency,modulation,bandwidth,list1,list2,list3,bank
@@ -20,11 +38,11 @@ M001,HANEDA,118.10000,AM,Wide,1,0,0,1
 M002,TOWER,118.80000,AM,Wide,1,1,0,1
 ```
 
-An empty slot has empty `name/frequency/modulation/bandwidth` fields and zero List/Bank fields.
+空Memoryは `name/frequency/modulation/bandwidth` を空欄、List/Bankを0とします。
 
-## Optional Bank rows
+## Bank row
 
-Bank names can be carried without changing the header. Bank rows use `B1`..`B8`, use only `record` and `name`, and are placed before Memory rows when exported.
+Bank nameはheaderを変更せず同じCSVへ格納できます。
 
 ```csv
 record,name,frequency,modulation,bandwidth,list1,list2,list3,bank
@@ -33,23 +51,45 @@ B2,LOCAL,,,,,,,
 M001,HANEDA,118.10000,AM,Wide,1,0,0,1
 ```
 
-Other fields on a Bank row must be empty.
+- `record`: `B1`〜`B8`
+- `name`: Bank name
+- その他の列: 必ず空欄
 
-Export includes Bank rows by default; `--no-banks` omits them. Import applies detected Bank rows by default; `--no-banks` preserves the Bank names from the base RAW image.
+Export/templateはデフォルトでBank rowを含みます。`--no-banks`で省略できます。
 
-## Field rules
+Import時もBank rowをデフォルトで反映します。`--no-banks`を指定すると、`--base` RAWに存在する現在のBank nameを保持します。
 
-- `name`: printable ASCII, maximum 10 bytes.
-- `frequency`: MHz decimal, validated against firmware RX ranges.
-- `modulation`: `FM`, `AM`, or `USB` (numeric 0..2 also accepted on import).
-- `bandwidth`: `Wide` or `Narrow` (`W/N` or 0/1 also accepted on import).
-- `list1..list3`: boolean values; `1/0`, `true/false`, `on/off`, `yes/no` are accepted.
-- `bank`: integer 0..8; 0 means UNBANKED.
+TemplateのBank初期値は `BANK1`〜`BANK8` です。実際のBank nameへ編集するか、Bank nameを変更したくない場合はtemplate生成/Importで `--no-banks` を使用してください。
 
-## Hidden record fields
+## Field rule
 
-CSV is not a lossless backup. It does not expose RX code/type, step, compander, or reserved record fields.
+- `name`: printable ASCII、最大10 byte
+- `frequency`: MHz decimal。FirmwareのRX可能rangeでvalidation
+- `modulation`: `FM` / `AM` / `USB`。Importでは0/1/2も受付
+- `bandwidth`: `Wide` / `Narrow`。ImportではW/N、0/1も受付
+- `list1..list3`: `1/0`, `true/false`, `on/off`, `yes/no`
+- `bank`: 0〜8。0はUNBANKED
 
-`csv import` therefore requires a `--base` RAW image. For each populated target Memory slot, import starts from that slot's existing 8-byte record and replaces only CSV-visible fields. If the base slot is erased, sensible defaults are initialized for hidden fields.
+## Hidden fieldと`--base`
 
-Use RAW backups, not CSV, when exact EEPROM restoration is required.
+CSVは次のようなfieldを含みません。
+
+- RX code / code type
+- Step
+- Compander
+- reserved bits
+
+したがってCLIの `csv import` では、元の完全なEEPROM imageを `--base` として指定する必要があります。
+
+推奨手順:
+
+```bash
+k5rx radio read backup.raw --port <PORT>
+k5rx csv export backup.raw channels.csv
+# edit channels.csv
+k5rx csv import channels.csv --base backup.raw --output updated.raw
+```
+
+既存Memoryを更新する場合、Importは同じphysical slotの8-byte recordをbaseとしてCSVにあるfieldだけを変更します。空slotへ新規Memoryを入れる場合のみhidden fieldを安全なdefaultで初期化します。
+
+正確なEEPROM復元にはCSVではなく`.raw` backupを使用してください。

@@ -1,45 +1,53 @@
-# Serial Protocol Provenance and Reference Policy
+# Serial Protocolの由来 / 参照方針
 
-K5RX-JPN Tools is intended to be distributable under Apache License 2.0. This document records the source hierarchy used when implementing serial communication so that protocol facts are not confused with source-code provenance.
+K5RX-JPN ToolsをApache License 2.0で公開できるように、Serial communication実装のsource hierarchyを明示します。
+
+目的は、**protocol上の事実**と**特定source codeの著作物としての由来**を混同しないことです。
 
 ## Primary implementation source
 
-The primary source for normal-mode EEPROM communication is the Apache-2.0 licensed F4HWN/DualTachyon firmware source used by the companion RX-only firmware fork.
+normal-mode EEPROM communicationの一次資料は、companion RX-only Firmware forkがベースとするApache-2.0のF4HWN/DualTachyon Firmware sourceです。
 
-Relevant firmware areas include:
+主な該当箇所:
 
-- `app/uart.c`: frame markers, XOR table, session command, EEPROM read/write commands and replies.
-- `driver/crc.c`: CRC-16/CCITT configuration.
-- `driver/uart.c`: UART configuration.
-- `eeprom-layout.h`: RX_ONLY EEPROM boundaries and factory/calibration protection.
+- `app/uart.c`: frame marker、XOR table、session、EEPROM Read/Write command/reply
+- `driver/crc.c`: CRC-16/CCITT設定
+- `driver/uart.c`: UART設定
+- `eeprom-layout.h`: RX_ONLY EEPROM boundary、Factory/Calibration protection
 
-The Python and Web clients are independent client-side implementations of those documented firmware interfaces.
+Python/Web clientは、これらFirmware側interfaceを仕様として読み取り、client側で独立実装します。
 
-## Permissive supplementary references
+## Permissive licenseの補助参照
 
-Permissively licensed projects may be used as secondary references after checking the applicable repository and file-level license at the time code is considered for reuse. Examples investigated during initial design include F4HWN K5Viewer, UV Studio, and the F4HWN V3 `tools/serialtool` family.
+permissive licenseのprojectは、実際にreuseする時点でrepository/file単位のlicenseを確認した上で補助参照にできます。
 
-Secondary references are useful for serial-port discovery, UI/UX, recovery behavior, browser compatibility and cross-checking observed protocol behavior. They do not supersede the firmware implementation as the protocol authority for this project.
+初期調査で候補となった例:
 
-## GPL interoperability references
+- F4HWN K5Viewer
+- UV Studio
+- F4HWN V3 `tools/serialtool`
 
-GPL implementations such as k5prog and CHIRP may be used for:
+これらは、port discovery、UI/UX、recovery behavior、browser compatibility、wire behaviorのcross-check等の参考にできます。
 
-- interoperability testing,
-- comparing wire behavior,
-- independently confirming protocol facts,
-- diagnosing device compatibility.
+ただし、このprojectでprotocol authorityとなるのはFirmware implementationです。
 
-Their implementation code must not be copied, mechanically translated, or used as the structural basis of Apache-2.0 source in this repository.
+## GPL implementationの扱い
 
-## Development rule
+k5progやCHIRP等のGPL implementationは次の用途に限定して参照できます。
 
-When adding protocol functionality:
+- interoperability test
+- wire behavior比較
+- protocol factの独立確認
+- device compatibility調査
 
-1. Identify the firmware-side command/layout implementing the behavior.
-2. Document the wire contract in `docs/`.
-3. Implement the Python/Web client from that contract.
-4. Add a test vector or device test where practical.
-5. If third-party source code is copied or adapted, record the exact file, revision, license and required attribution before merge.
+それらのimplementation codeを、このApache-2.0 repositoryへコピー、機械的翻訳、構造をそのまま移植することは行いません。
 
-This policy is engineering provenance guidance, not legal advice.
+## 新しいprotocol機能を追加する際のrule
+
+1. behaviorを実装しているFirmware側command/layoutを確認する
+2. `docs/`へwire contractを記述する
+3. そのcontractからPython/Web clientを実装する
+4. 可能ならtest vectorまたは実機testを追加する
+5. third-party sourceをコピー/改変する場合は、merge前にexact file/revision/license/attributionを記録する
+
+このdocumentはengineering上のprovenance管理方針であり、法的助言ではありません。

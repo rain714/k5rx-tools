@@ -1,14 +1,14 @@
 # Normal-mode Serial Protocol
 
-Status: implementation specification for K5RX-JPN Tools.
+K5RX-JPN Toolsが通常起動中のRadioとEEPROM通信するために使用するprotocol仕様です。
 
 ## Transport
 
 - 38400 baud
 - 8 data bits
 - 1 stop bit
-- no parity
-- no flow control
+- parityなし
+- flow controlなし
 
 ## Frame
 
@@ -20,23 +20,29 @@ CRC_LO CRC_HI
 DC BA
 ```
 
-The payload and CRC bytes are XOR-obfuscated using the repeating 16-byte table:
+PAYLOADとCRC byteは次の16-byte tableを繰り返してXOR obfuscationします。
 
 ```text
 16 6C 14 E6 2E 91 0D 40 21 35 D5 40 13 03 E9 80
 ```
 
-CRC is CRC-16/CCITT with initial value 0 and polynomial 0x1021 (the commonly named XMODEM form).
+CRCはinitial value 0、polynomial `0x1021` のCRC-16/CCITT（一般にXMODEMと呼ばれる形）です。
 
 ## Command payload header
 
-The decoded payload starts with two little-endian 16-bit values:
+decode後のpayload先頭はlittle-endian uint16 x 2です。
 
 ```text
 command_id, data_size
 ```
 
-The byte representation therefore appears as, for example, `14 05 04 00` for command `0x0514` with four data bytes.
+例えばcommand `0x0514`、data size 4の場合はbyte列として:
+
+```text
+14 05 04 00
+```
+
+となります。
 
 ## Session (`0x0514`)
 
@@ -46,9 +52,13 @@ Request data:
 uint32 session_id
 ```
 
-The value is a session identifier rather than a wall-clock timestamp. Clients generate a fresh random 32-bit value per connection and reuse it for EEPROM read/write commands in that session.
+Firmware source上ではwall-clock timestampそのものではなくsession identifierとして扱われます。
 
-Expected reply: `0x0515`, including firmware version/state.
+K5RX-JPN Toolsは接続ごとにrandom 32-bit valueを生成し、そのsession内のRead/Writeで同じ値を使用します。
+
+Expected reply: `0x0515`
+
+replyにはFirmware version/stateが含まれます。
 
 ## Read EEPROM (`0x051B`)
 
@@ -61,7 +71,7 @@ uint8  padding
 uint32 session_id
 ```
 
-Maximum supported transfer size used by this project: `0x80` bytes.
+K5RX-JPN Toolsが使用する最大transfer sizeは`0x80` byteです。
 
 Expected reply `0x051C` data:
 
@@ -84,23 +94,27 @@ uint32 session_id
 uint8  data[size]
 ```
 
-K5RX-JPN Tools writes aligned 8-byte blocks and coalesces adjacent allowed blocks up to 128 bytes per request.
+Memory tool側では8-byte alignmentを要求し、隣接する許可済みchanged blockを最大128 byteまでまとめます。
 
-Expected reply: `0x051E`, containing the written offset.
+Expected reply: `0x051E`
 
-Every write request is followed by an EEPROM read of the same range and byte-for-byte verification.
+replyにはwritten offsetが含まれます。
 
-## Tool write allowlist
+各Write requestの後、同じoffset/sizeをReadし、byte-for-byteでVerifyします。
 
-The Memory Manager intentionally has a narrower write policy than the firmware protocol itself:
+## Tool側Write allowlist
+
+Firmware protocol自体が扱える領域より、K5RX-JPN Memory ToolのWrite policyを意図的に狭くします。
 
 ```text
-0x0010..0x1C2F  Memory records and names
+0x0010..0x1C2F  Memory records / names
 0x1D30..0x1DAF  Bank table
 ```
 
-`0x1E00..0x1FFF` is factory/calibration data and is never writable.
+`0x1E00..0x1FFF` Factory/Calibrationは絶対にWriteしません。
 
-## Source of specification
+## 仕様の由来
 
-The normal-mode protocol above is derived from the Apache-2.0 firmware implementation, principally F4HWN/DualTachyon `app/uart.c` and `driver/crc.c`, plus observed compatible device behavior. See `serial-protocol-provenance.md`.
+このnormal-mode protocolは、Apache-2.0のF4HWN/DualTachyon Firmware implementation、主として`app/uart.c`と`driver/crc.c`、および互換実機挙動を一次資料として整理しています。
+
+詳細は[`serial-protocol-provenance.md`](serial-protocol-provenance.md)を参照してください。
