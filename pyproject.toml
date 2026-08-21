@@ -23,6 +23,7 @@ classifiers = [
 
 [project.scripts]
 k5rx = "k5rx_jpn.cli:main"
+k5rx-jpn = "k5rx_jpn.cli:main"
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
