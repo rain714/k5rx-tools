@@ -81,7 +81,10 @@ class K5Radio:
     def _read_exact(self, size: int, deadline: float) -> bytes:
         data = bytearray()
         while len(data) < size:
-            chunk = self.ser.read(size - len(data))
+            try:
+                chunk = self.ser.read(size - len(data))
+            except serial.SerialException as exc:
+                raise RadioError(f"serial read failed: {exc}") from exc
             if chunk:
                 data.extend(chunk)
                 continue
