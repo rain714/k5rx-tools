@@ -102,6 +102,14 @@ def cmd_csv_validate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_csv_template(args: argparse.Namespace) -> int:
+    csvio.write_template(args.csv, include_banks=not args.no_banks)
+    print(f"output={args.csv} memories=400 banks={'0' if args.no_banks else '8'}")
+    print("Next: edit the CSV, then run 'k5rx csv validate <file.csv>'.")
+    print("To apply it, first create a fresh RAW backup with 'k5rx radio read backup.raw --port <PORT>'.")
+    return 0
+
+
 def cmd_csv_export(args: argparse.Namespace) -> int:
     image = _read_raw(args.raw)
     csvio.export_csv(image, args.csv, include_banks=not args.no_banks)
@@ -110,12 +118,20 @@ def cmd_csv_export(args: argparse.Namespace) -> int:
 
 
 def cmd_csv_import(args: argparse.Namespace) -> int:
+    if not args.base.is_file():
+        raise schema.ValidationError(
+            f"--base RAW not found: {args.base}. "
+            "Create a fresh baseline first with 'k5rx radio read backup.raw --port <PORT>', "
+            "then pass that file with --base."
+        )
     base = _read_raw(args.base)
     updated = csvio.import_csv(args.csv, base, import_banks=not args.no_banks)
     schema.assert_safe_change(base, updated)
     _write_raw(args.output, updated)
     blocks = schema.changed_blocks(base, updated)
     print(f"output={args.output} changed_blocks={len(blocks)} sha256={hashlib.sha256(updated).hexdigest()}")
+    print(f"Next: review with 'k5rx eeprom diff {args.base} {args.output}'.")
+    print(f"Then write with 'k5rx radio write {args.output} --base {args.base} --port <PORT>'.")
     return 0
 
 
@@ -143,10 +159,16 @@ def cmd_radio_read(args: argparse.Namespace) -> int:
     schema.validate_image(image)
     _write_raw(args.output, image)
     print(f"output={args.output} bytes={len(image)} sha256={hashlib.sha256(image).hexdigest()}")
+    print(f"Use this file as --base when importing CSV or writing an edited RAW image: {args.output}")
     return 0
 
 
 def cmd_radio_write(args: argparse.Namespace) -> int:
+    if not args.base.is_file():
+        raise schema.ValidationError(
+            f"--base RAW not found: {args.base}. "
+            "Create a fresh baseline first with 'k5rx radio read backup.raw --port <PORT>'."
+        )
     base = _read_raw(args.base)
     updated = _read_raw(args.raw)
     blocks = schema.assert_safe_change(base, updated)
@@ -190,8 +212,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("after", type=Path)
     p.set_defaults(func=cmd_eeprom_diff)
 
-    csvp = top.add_parser("csv", help="CSV import/export/validation")
+    csvp = top.add_parser("csv", help="CSV template/import/export/validation")
     csub = csvp.add_subparsers(dest="command", required=True)
+    p = csub.add_parser("template", help="create a canonical CSV with all 400 required Memory rows")
+    p.add_argument("csv", type=Path, help="output CSV path")
+    p.add_argument("--no-banks", action="store_true", help="omit B1..B8 Bank-name rows")
+    p.set_defaults(func=cmd_csv_template)
     p = csub.add_parser("validate", help="validate canonical CSV structure")
     p.add_argument("csv", type=Path)
     p.set_defaults(func=cmd_csv_validate)
@@ -200,9 +226,26 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("csv", type=Path)
     p.add_argument("--no-banks", action="store_true", help="omit B1..B8 Bank-name rows")
     p.set_defaults(func=cmd_csv_export)
-    p = csub.add_parser("import", help="apply CSV visible fields to a base RAW image")
+    p = csub.add_parser(
+        "import",
+        help="apply CSV visible fields to a base RAW image",
+        description=(
+            "Apply a complete 400-Memory CSV to a lossless RAW baseline. "
+            "The baseline preserves fields that are intentionally absent from CSV."
+        ),
+        epilog=(
+            "Typical workflow: k5rx radio read backup.raw --port <PORT>; "
+            "k5rx csv import channels.csv --base backup.raw --output updated.raw; "
+            "k5rx eeprom diff backup.raw updated.raw"
+        ),
+    )
     p.add_argument("csv", type=Path)
-    p.add_argument("--base", required=True, type=Path, help="lossless base RAW used to preserve hidden fields")
+    p.add_argument(
+        "--base",
+        required=True,
+        type=Path,
+        help="fresh lossless RAW backup, normally created by 'k5rx radio read backup.raw --port <PORT>'",
+    )
     p.add_argument("--output", required=True, type=Path)
     p.add_argument("--no-banks", action="store_true", help="ignore B1..B8 rows and preserve base Bank names")
     p.set_defaults(func=cmd_csv_import)
@@ -218,11 +261,27 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("output", type=Path)
     p.add_argument("--port", required=True)
     p.set_defaults(func=cmd_radio_read)
-    p = rsub.add_parser("write", help="write safe differences from base RAW and verify each transaction")
+    p = rsub.add_parser(
+        "write",
+        help="write safe differences from base RAW and verify each transaction",
+        description=(
+            "Write only safe changed EEPROM regions. Before writing, the radio is re-read and must still "
+            "match --base byte-for-byte; every write transaction is then read back and verified."
+        ),
+        epilog=(
+            "Create --base immediately before editing with: "
+            "k5rx radio read backup.raw --port <PORT>"
+        ),
+    )
     p.add_argument("raw", type=Path, help="new RAW image")
-    p.add_argument("--base", required=True, type=Path, help="fresh RAW baseline; radio must still match it exactly")
+    p.add_argument(
+        "--base",
+        required=True,
+        type=Path,
+        help="fresh RAW backup created by 'k5rx radio read backup.raw --port <PORT>'",
+    )
     p.add_argument("--port", required=True)
-    p.add_argument("--yes", action="store_true", help="skip interactive WRITE confirmation")
+    p.add_argument("--yes", action="store_true", help="skip interactive WRITE confirmation; intended for automation")
     p.set_defaults(func=cmd_radio_write)
     return parser
 

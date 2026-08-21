@@ -15,6 +15,31 @@ class CsvInfo:
     bank_rows: int
 
 
+def write_template(path: Path, *, include_banks: bool = True) -> None:
+    """Write a canonical editable CSV containing all required Memory rows."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=FIELDS, lineterminator="\r\n")
+        writer.writeheader()
+        if include_banks:
+            for bank_id in range(1, schema.BANK_COUNT + 1):
+                writer.writerow({"record": f"B{bank_id}", "name": f"BANK{bank_id}"})
+        for channel in range(1, schema.CHANNEL_COUNT + 1):
+            writer.writerow(
+                {
+                    "record": f"M{channel:03d}",
+                    "name": "",
+                    "frequency": "",
+                    "modulation": "",
+                    "bandwidth": "",
+                    "list1": 0,
+                    "list2": 0,
+                    "list3": 0,
+                    "bank": 0,
+                }
+            )
+
+
 def _truthy(value: object) -> bool:
     text = str(value or "").strip().lower()
     if text in {"1", "true", "on", "yes"}:
@@ -125,7 +150,10 @@ def inspect(path: Path) -> CsvInfo:
             _parse_bandwidth(row["bandwidth"])
         memories.add(channel)
     if len(memories) != schema.CHANNEL_COUNT:
-        raise schema.ValidationError(f"CSV must contain all 400 physical Memory slots; found {len(memories)}")
+        raise schema.ValidationError(
+            f"CSV must contain all 400 physical Memory slots; found {len(memories)}. "
+            "Create a complete starting file with 'k5rx csv template channels.csv'."
+        )
     return CsvInfo(memory_rows=len(memories), bank_rows=len(banks))
 
 
