@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "k5rx-tools"
 version = "0.1.0"
-description = "RX-only EEPROM, CSV and serial tools for Japanese-oriented Quansheng UV-K5/K6 firmware"
+description = "EEPROM, Memory, Bank, CSV and Web Serial tools for K5RX firmware"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
@@ -20,6 +20,12 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Topic :: Communications :: Ham Radio",
 ]
+
+[project.urls]
+Homepage = "https://rain714.github.io/k5rx-tools/"
+Repository = "https://github.com/rain714/k5rx-tools"
+Documentation = "https://github.com/rain714/k5rx-tools/tree/main/docs"
+Firmware = "https://github.com/rain714/k5rx-firmware"
 
 [project.scripts]
 k5rx = "k5rx_tools.cli:main"

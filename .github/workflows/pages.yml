@@ -25,6 +25,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Validate inline Web JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          html = Path('web/index.html').read_text(encoding='utf-8')
+          script = html.split('<script>', 1)[1].split('</script>', 1)[0]
+          Path('/tmp/k5rx-web.js').write_text(script, encoding='utf-8')
+          PY
+          node --check /tmp/k5rx-web.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

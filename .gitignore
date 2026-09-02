@@ -12,3 +12,4 @@ node_modules/
 web/dist/
 *.raw.tmp
 *.log
+/human_work/

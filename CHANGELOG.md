@@ -13,5 +13,7 @@ K5RX Tools初期実装。
 - CLI help/errorから次の推奨commandを案内
 - static Web Serial Memory Manager
 - Web版CSV雛形生成、400 slot、Bank/List、bulk edit、Undo/Redo、RAW backup、Write + Verify
-- 日本語primary README/document/Web UI + English README
+- Web版のstale baseline protection、Factory/Calibration write guard、human-readable Diff
+- release向けWeb UI/UX整理、進捗表示、折り畳みprotocol log、CSV説明dialog
+- 初見利用者向けの日本語primary README + English README
 - GitHub ActionsによるPython test/package build、Web JavaScript syntax check、GitHub Pages deployment
