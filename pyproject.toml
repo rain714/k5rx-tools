@@ -3,13 +3,13 @@ requires = ["hatchling>=1.26"]
 build-backend = "hatchling.build"
 
 [project]
-name = "k5rx-jpn"
+name = "k5rx-tools"
 version = "0.1.0"
 description = "RX-only EEPROM, CSV and serial tools for Japanese-oriented Quansheng UV-K5/K6 firmware"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
-authors = [{ name = "K5RX-JPN contributors" }]
+authors = [{ name = "K5RX contributors" }]
 dependencies = ["pyserial>=3.5"]
 classifiers = [
   "Development Status :: 3 - Alpha",
@@ -22,14 +22,13 @@ classifiers = [
 ]
 
 [project.scripts]
-k5rx = "k5rx_jpn.cli:main"
-k5rx-jpn = "k5rx_jpn.cli:main"
+k5rx = "k5rx_tools.cli:main"
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/k5rx_jpn"]
+packages = ["src/k5rx_tools"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

@@ -1,14 +1,15 @@
 # 初期設計上の判断
 
-K5RX-JPN Toolsの初期公開に向けて採用した判断を記録します。初回public release前であれば比較的容易に変更できるものも含みます。
+K5RX Toolsの初期公開に向けて採用した判断を記録します。初回public release前であれば比較的容易に変更できるものも含みます。
 
 ## Repository / Naming
 
-- Project family: **K5RX-JPN Tools**
-- Repository: `uv-k5-rx-jpn-tools`
-- Python distribution: `k5rx-jpn`
+- Project family: **K5RX Tools**
+- Repository: `k5rx-tools`
+- Python distribution: `k5rx-tools`
+- Python module: `k5rx_tools`
 - Primary CLI command: `k5rx`
-- `k5rx-jpn` も明示的aliasとしてinstall
+- 初回公開前のためlegacy CLI aliasは設けない
 - FirmwareはF4HWN forkの別repositoryとして管理
 
 ## Language

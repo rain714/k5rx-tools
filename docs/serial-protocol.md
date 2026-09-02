@@ -1,6 +1,6 @@
 # Normal-mode Serial Protocol
 
-K5RX-JPN Toolsが通常起動中のRadioとEEPROM通信するために使用するprotocol仕様です。
+K5RX Toolsが通常起動中のRadioとEEPROM通信するために使用するprotocol仕様です。
 
 ## Transport
 
@@ -54,7 +54,7 @@ uint32 session_id
 
 Firmware source上ではwall-clock timestampそのものではなくsession identifierとして扱われます。
 
-K5RX-JPN Toolsは接続ごとにrandom 32-bit valueを生成し、そのsession内のRead/Writeで同じ値を使用します。
+K5RX Toolsは接続ごとにrandom 32-bit valueを生成し、そのsession内のRead/Writeで同じ値を使用します。
 
 Expected reply: `0x0515`
 
@@ -71,7 +71,7 @@ uint8  padding
 uint32 session_id
 ```
 
-K5RX-JPN Toolsが使用する最大transfer sizeは`0x80` byteです。
+K5RX Toolsが使用する最大transfer sizeは`0x80` byteです。
 
 Expected reply `0x051C` data:
 
@@ -104,7 +104,7 @@ replyにはwritten offsetが含まれます。
 
 ## Tool側Write allowlist
 
-Firmware protocol自体が扱える領域より、K5RX-JPN Memory ToolのWrite policyを意図的に狭くします。
+Firmware protocol自体が扱える領域より、K5RX Memory ToolのWrite policyを意図的に狭くします。
 
 ```text
 0x0010..0x1C2F  Memory records / names

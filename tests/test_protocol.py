@@ -1,4 +1,4 @@
-from k5rx_jpn import protocol
+from k5rx_tools import protocol
 
 
 def test_crc_xmodem_known_vector():

@@ -1,8 +1,8 @@
-# K5RX-JPN Tools アーキテクチャ
+# K5RX Tools アーキテクチャ
 
 ## 目的
 
-K5RX-JPN Toolsは、RX_ONLY EEPROM Schemaを共通仕様として、CLIとWebの2つの提供形態を同一repositoryで管理します。
+K5RX Toolsは、RX_ONLY EEPROM Schemaを共通仕様として、CLIとWebの2つの提供形態を同一repositoryで管理します。
 
 ```text
                 RX_ONLY Schema v2
@@ -38,7 +38,7 @@ CSVは人間が編集するための交換形式です。
 ## Python module
 
 ```text
-src/k5rx_jpn/
+src/k5rx_tools/
 ├── schema.py      EEPROM layout / validation / write allowlist
 ├── model.py       Memory / Bank codec
 ├── csvio.py       CSV template / import / export / validation
@@ -92,10 +92,10 @@ CLI/Web双方で次を守ります。
 
 ### CLI
 
-Python package name: `k5rx-jpn`
+Python distribution name: `k5rx-tools`
 
 ```bash
-uvx k5rx-jpn --help
+uvx k5rx-tools --help
 ```
 
 Primary commandは`k5rx`です。

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from k5rx_jpn import model, radio, schema
+from k5rx_tools import model, radio, schema
 
 
 class FakeRadio:

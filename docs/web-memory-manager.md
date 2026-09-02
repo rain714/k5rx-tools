@@ -1,6 +1,6 @@
 # Web Memory Manager
 
-`web/index.html` はK5RX-JPN Toolsの初期public browser applicationです。
+`web/index.html` はK5RX Toolsの初期public browser applicationです。
 
 ## 配布方式
 
@@ -55,7 +55,7 @@ Write直前にはRadio EEPROM全体を再Readし、編集開始時のbaselineと
 
 ## Language / i18n
 
-K5RX-JPNは日本向けprojectのため、初期Web UIは日本語をprimaryとします。
+K5RX Toolsは日本向け利用をprimary targetとするため、初期Web UIは日本語をprimaryとします。
 
 ただしv0.1ではsingle HTMLという単純さを優先し、i18n frameworkは導入しません。将来TypeScript/Vite等へ分割する際に、UI文字列をdictionary/resourceへ分離し、日本語/英語等を切り替えられる構成へ移行します。
 

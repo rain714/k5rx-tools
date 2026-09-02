@@ -1,6 +1,6 @@
 # Documentation
 
-K5RX-JPN Toolsの主要documentです。
+K5RX Toolsの主要documentです。
 
 - [`cli.md`](cli.md) — CLI利用手順、`--base`の意味、典型errorからの復旧方法
 - [`web-memory-manager.md`](web-memory-manager.md) — Web版の利用/配布/安全モデル

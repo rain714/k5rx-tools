@@ -1,6 +1,6 @@
 import pytest
 
-from k5rx_jpn import model, schema
+from k5rx_tools import model, schema
 
 
 def test_blank_image_validates(blank_image):

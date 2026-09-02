@@ -2,7 +2,7 @@
 
 ## 0.1.0 - Unreleased
 
-K5RX-JPN Tools初期実装。
+K5RX Tools初期実装。
 
 - Apache-2.0 project / Serial protocol provenance policy
 - RX_ONLY EEPROM Schema v2 codec / validation

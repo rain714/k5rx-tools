@@ -1,8 +1,8 @@
-# K5RX-JPN Tools
+# K5RX Tools
 
 [English README](README.en.md)
 
-K5RX-JPN Tools は、Quansheng UV-K5/K6 V1 系の **日本向け受信専用（RX-only）Firmware** を管理するためのツール群です。現在は F4HWN ベースの RX_ONLY EEPROM Schema v2 を対象としています。
+K5RX Tools は、Quansheng UV-K5/K6 V1 系の **日本向け受信専用（RX-only）Firmware** を管理するためのツール群です。現在は F4HWN ベースの RX_ONLY EEPROM Schema v2 を対象としています。
 
 同じEEPROM仕様を、用途に応じて2つの形で提供します。
 
@@ -36,7 +36,7 @@ uv run k5rx --help
 PyPI公開後は、インストールせず一時実行できます。
 
 ```bash
-uvx k5rx-jpn --help
+uvx k5rx-tools --help
 ```
 
 CLI自身のhelp/error messageは、terminal文字コードによる問題を避けるため**英語**を基本とします。
@@ -217,7 +217,7 @@ GitHub ActionsではPython 3.11 / 3.12 / 3.13のtest、Web JavaScript syntax che
 ## Repository構成
 
 ```text
-src/k5rx_jpn/      Python library / CLI
+src/k5rx_tools/    Python library / CLI
 web/               Web Memory Manager
 docs/              EEPROM / CSV / protocol / design document
 tests/             regression tests
@@ -229,7 +229,7 @@ testdata/          portable test vectors / examples
 
 ## Serial protocolの由来 / License
 
-K5RX-JPN Toolsは **Apache License 2.0** で公開します。
+K5RX Toolsは **Apache License 2.0** で公開します。
 
 通常起動時のSerial protocol実装は、Apache-2.0で公開されているF4HWN/DualTachyon Firmware sourceと実機仕様を一次資料とした独立実装です。GPLのk5prog/CHIRPはinteroperability確認には利用できますが、このrepositoryの実装sourceとしてコードをコピー・翻案しない方針です。
 

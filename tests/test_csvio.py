@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from k5rx_jpn import csvio, model, schema
+from k5rx_tools import csvio, model, schema
 
 
 def test_csv_round_trip_and_bank_rows(tmp_path: Path, blank_image: bytes):

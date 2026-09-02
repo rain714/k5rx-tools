@@ -4,7 +4,7 @@ import struct
 
 import pytest
 
-from k5rx_jpn import model, schema
+from k5rx_tools import model, schema
 
 
 def make_image() -> bytes:

@@ -1,4 +1,4 @@
-# K5RX-JPN CSV仕様
+# K5RX CSV仕様
 
 CSVは、Memory Managerで扱う項目をExcelやテキストエディタで編集するための**人間向け交換形式**です。完全なEEPROM backupではありません。
 

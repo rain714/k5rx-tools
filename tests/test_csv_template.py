@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from k5rx_jpn import csvio
+from k5rx_tools import csvio
 
 
 def test_template_contains_all_memories_and_banks(tmp_path: Path):

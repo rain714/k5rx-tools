@@ -1,6 +1,6 @@
 # Serial Protocolの由来 / 参照方針
 
-K5RX-JPN ToolsをApache License 2.0で公開できるように、Serial communication実装のsource hierarchyを明示します。
+K5RX ToolsをApache License 2.0で公開できるように、Serial communication実装のsource hierarchyを明示します。
 
 目的は、**protocol上の事実**と**特定source codeの著作物としての由来**を混同しないことです。
 

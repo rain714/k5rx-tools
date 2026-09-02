@@ -32,7 +32,7 @@ Toolsはこのheaderを検証し、期待値と一致しないRAWへの通常Wri
 0x1E00..0x1FFF  factory/calibration
 ```
 
-K5RX-JPN Memory toolsは`0x1E00..0x1FFF`を絶対にWriteしません。
+K5RX Memory toolsは`0x1E00..0x1FFF`を絶対にWriteしません。
 
 通常のMemory編集でWriteを許可する領域は、Memory record/nameとBank tableだけです。
 

@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from k5rx_jpn import csvio, schema
+from k5rx_tools import csvio, schema
 
 
 HEADER = "record,name,frequency,modulation,bandwidth,list1,list2,list3,bank"

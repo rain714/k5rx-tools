@@ -1,6 +1,6 @@
 # CLI利用ガイド
 
-K5RX-JPN CLIのprimary commandは`k5rx`です。
+K5RX CLIのprimary commandは`k5rx`です。
 
 開発repository内では:
 
@@ -11,7 +11,7 @@ uv run k5rx --help
 PyPI公開後は:
 
 ```bash
-uvx k5rx-jpn --help
+uvx k5rx-tools --help
 ```
 
 CLIのhelp/error/output自体はterminal encoding互換性を優先して英語で表示します。このdocumentでは典型的な操作を日本語で説明します。

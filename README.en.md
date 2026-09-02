@@ -1,8 +1,8 @@
-# K5RX-JPN Tools
+# K5RX Tools
 
 [日本語 README](README.md)
 
-K5RX-JPN Tools is a companion toolset for the Japanese-oriented RX-only firmware based on F4HWN for the Quansheng UV-K5/K6 V1 family.
+K5RX Tools is a companion toolset for the Japanese-oriented RX-only firmware based on F4HWN for the Quansheng UV-K5/K6 V1 family.
 
 It provides the same RX_ONLY EEPROM model through two interfaces:
 
@@ -21,7 +21,7 @@ uv run k5rx --help
 After publication to PyPI:
 
 ```bash
-uvx k5rx-jpn --help
+uvx k5rx-tools --help
 ```
 
 Create a complete editable CSV template:
@@ -108,6 +108,6 @@ CI runs Python tests on 3.11, 3.12 and 3.13, checks Web JavaScript syntax, and c
 
 ## Protocol provenance and license
 
-K5RX-JPN Tools is licensed under Apache-2.0. The normal-mode serial implementation is based on the Apache-2.0 F4HWN/DualTachyon firmware source and documented device behavior. GPL implementations such as k5prog and CHIRP are interoperability references only and are not implementation sources for this repository.
+K5RX Tools is licensed under Apache-2.0. The normal-mode serial implementation is based on the Apache-2.0 F4HWN/DualTachyon firmware source and documented device behavior. GPL implementations such as k5prog and CHIRP are interoperability references only and are not implementation sources for this repository.
 
 Firmware flashing is intentionally deferred from the initial stable CLI surface and will be treated as a separate safety/recovery workflow.
